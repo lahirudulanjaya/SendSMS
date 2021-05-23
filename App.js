@@ -1,32 +1,62 @@
-import type {Node} from 'react';
-import React from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  useColorScheme,
-  View,
-} from 'react-native';
+import React, {Component} from 'react';
+import {Linking, View} from 'react-native';
 import {Button, TextInput, Title} from 'react-native-paper';
 import SmsAndroid from 'react-native-get-sms-android';
-
-import {Colors} from 'react-native/Libraries/NewAppScreen';
-
-const App: () => Node = () => {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+import BackgroundService from 'react-native-background-actions';
+const veryIntensiveTask = async taskDataArguments => {
+  // Example of an infinite loop task
+  const {delay} = taskDataArguments;
+  await new Promise(async resolve => {
+    for (let i = 0; BackgroundService.isRunning(); i++) {
+      console.log(i);
+      await new Promise(r => setTimeout(r, 2000));
+    }
+  });
+};
+const options = {
+  taskName: 'Example',
+  taskTitle: 'ExampleTask title',
+  taskDesc: 'ExampleTask description',
+  taskIcon: {
+    name: 'ic_launcher',
+    type: 'mipmap',
+  },
+  color: '#ff00ff',
+  linkingURI: 'yourSchemeHere://chat/jane', // See Deep Linking for more info
+  parameters: {
+    delay: 1000,
+  },
+};
+class App extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      message: '',
+      senders: '',
+    };
+  }
+  componentDidMount() {
+    Linking.addEventListener('url', this.sendMessage);
+  }
+  onChangeSenders = senders => {
+    this.setState({senders: senders});
   };
-  const [senders, setSenders] = React.useState('');
-  const [message, setMessage] = React.useState('');
-  const onChangeSenders = text => setSenders(text);
-  const onChangeMessage = text => setMessage(text);
-  const sendSMS = () => {
-    const sender = senders.split(',');
-    sender.forEach(i => {
+  onChangeMessage = message => {
+    this.setState({message: message});
+  };
+
+  sendMessage = async uri => {
+    const route = uri.url.replace(/.*?:\/\//g, '');
+    await this.setState({message: route.split('/')[0]});
+    await this.setState({senders: route.split('/')[1]});
+    await this.sendSMS(route.split('/')[0], route.split('/')[1]);
+  };
+
+  sendSMS = async (message,senders) => {
+    const senderArray = senders.split(',');
+    senderArray.forEach(sender => {
       SmsAndroid.autoSend(
-        i,
+        sender,
         message,
         fail => {
           console.log('Failed with this error: ' + fail);
@@ -37,36 +67,53 @@ const App: () => Node = () => {
       );
     });
   };
-  return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <View>
-          <Title>Send SMS</Title>
 
-          <TextInput
-            label="Senders"
-            value={senders}
-            onChangeText={onChangeSenders}
-          />
+  backGroundRun = async () => {
+    await BackgroundService.start(veryIntensiveTask, options).then(
+      r => console.log(r),
+      err => {
+        console.log(err);
+      },
+    );
+  };
+  stop = () => {
+    BackgroundService.stop();
+  };
+  render() {
+    return (
+      <View
+        style={{
+          backgroundColor: '#212121',
+          flex: 1,
+          justifyContent: 'center',
+        }}>
+        <Title style={{color: 'white'}}>Send SMS</Title>
 
-          <TextInput
-            label="Message"
-            value={message}
-            onChangeText={onChangeMessage}
-          />
-          <Button
-            icon="camera"
-            mode="contained"
-            onPress={() => sendSMS()}>
-            Send
-          </Button>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-};
+        <TextInput
+          label="Senders"
+          value={this.state.senders}
+          onChangeText={() => this.onChangeSenders}
+        />
+
+        <TextInput
+          multiline
+          numberOfLines={6}
+          label="Message"
+          value={this.state.message}
+          onChangeText={() => this.onChangeMessage}
+        />
+        <Button mode="contained" onPress={() => this.sendSMS(this.state.message,this.state.senders)}>
+          Send
+        </Button>
+        <Button mode="contained" onPress={() => this.backGroundRun()}>
+          Run In BackGround
+        </Button>
+        <Button mode="contained" onPress={() => this.stop()}>
+          Stop
+        </Button>
+      </View>
+    );
+  }
+}
 
 export default App;
