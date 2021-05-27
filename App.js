@@ -2,6 +2,7 @@ import React, {Component} from 'react';
 import {Linking, View} from 'react-native';
 import {Button, TextInput, Title} from 'react-native-paper';
 import SmsAndroid from 'react-native-get-sms-android';
+import {requestSendSMSPermission} from './permissionHandling/SendSms';
 
 const UNIQUE_KEY = '7098d2b2be5711eb85290242ac130003';
 const APP_LINK = 'smsserver://';
@@ -14,7 +15,8 @@ class App extends Component {
       senders: '',
     };
   }
-  componentDidMount() {
+  async componentDidMount() {
+    await requestSendSMSPermission();
     Linking.getInitialURL()
       .then(url => {
         if (url) {
