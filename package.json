@@ -12,7 +12,6 @@
   "dependencies": {
     "react": "17.0.1",
     "react-native": "0.64.1",
-    "react-native-background-actions": "^2.6.0",
     "react-native-get-sms-android": "^2.1.0",
     "react-native-paper": "^4.8.1"
   },

@@ -2,31 +2,10 @@ import React, {Component} from 'react';
 import {Linking, View} from 'react-native';
 import {Button, TextInput, Title} from 'react-native-paper';
 import SmsAndroid from 'react-native-get-sms-android';
-import BackgroundService from 'react-native-background-actions';
-const veryIntensiveTask = async taskDataArguments => {
-  // Example of an infinite loop task
-  const {delay} = taskDataArguments;
-  await new Promise(async resolve => {
-    for (let i = 0; BackgroundService.isRunning(); i++) {
-      console.log(i);
-      await new Promise(r => setTimeout(r, 2000));
-    }
-  });
-};
-const options = {
-  taskName: 'Example',
-  taskTitle: 'ExampleTask title',
-  taskDesc: 'ExampleTask description',
-  taskIcon: {
-    name: 'ic_launcher',
-    type: 'mipmap',
-  },
-  color: '#ff00ff',
-  linkingURI: 'yourSchemeHere://chat/jane', // See Deep Linking for more info
-  parameters: {
-    delay: 1000,
-  },
-};
+
+const UNIQUE_KEY = '7098d2b2be5711eb85290242ac130003';
+const APP_LINK = 'smsserver://';
+
 class App extends Component {
   constructor(props) {
     super(props);
@@ -36,7 +15,16 @@ class App extends Component {
     };
   }
   componentDidMount() {
-    Linking.addEventListener('url', this.sendMessage);
+    Linking.getInitialURL()
+      .then(url => {
+        if (url) {
+          this.sendMessage(url);
+        }
+      })
+      .catch(err => {
+        console.error('An error occurred', err);
+      });
+    Linking.addEventListener('url', e => this.sendMessage(e.url));
   }
   onChangeSenders = senders => {
     this.setState({senders: senders});
@@ -46,13 +34,11 @@ class App extends Component {
   };
 
   sendMessage = async uri => {
-    const route = uri.url.replace(/.*?:\/\//g, '');
-    await this.setState({message: route.split('/')[0]});
-    await this.setState({senders: route.split('/')[1]});
-    await this.sendSMS(route.split('/')[0], route.split('/')[1]);
+    await this.sendSMS(this.filterMessage(uri), this.filterSenders(uri));
+    await Linking.openURL(APP_LINK);
   };
 
-  sendSMS = async (message,senders) => {
+  sendSMS = async (message, senders) => {
     const senderArray = senders.split(',');
     senderArray.forEach(sender => {
       SmsAndroid.autoSend(
@@ -68,17 +54,15 @@ class App extends Component {
     });
   };
 
-  backGroundRun = async () => {
-    await BackgroundService.start(veryIntensiveTask, options).then(
-      r => console.log(r),
-      err => {
-        console.log(err);
-      },
-    );
-  };
-  stop = () => {
-    BackgroundService.stop();
-  };
+  filterMessage(url) {
+    const filterWord = 'message' + UNIQUE_KEY;
+    return url.match(filterWord + '(.*)' + filterWord)[1];
+  }
+
+  filterSenders(url) {
+    const filterWord = 'senders' + UNIQUE_KEY;
+    return url.match(filterWord + '(.*)' + filterWord)[1];
+  }
   render() {
     return (
       <View
@@ -92,7 +76,7 @@ class App extends Component {
         <TextInput
           label="Senders"
           value={this.state.senders}
-          onChangeText={() => this.onChangeSenders}
+          onChangeText={this.onChangeSenders}
         />
 
         <TextInput
@@ -100,16 +84,12 @@ class App extends Component {
           numberOfLines={6}
           label="Message"
           value={this.state.message}
-          onChangeText={() => this.onChangeMessage}
+          onChangeText={this.onChangeMessage}
         />
-        <Button mode="contained" onPress={() => this.sendSMS(this.state.message,this.state.senders)}>
+        <Button
+          mode="contained"
+          onPress={() => this.sendSMS(this.state.message, this.state.senders)}>
           Send
-        </Button>
-        <Button mode="contained" onPress={() => this.backGroundRun()}>
-          Run In BackGround
-        </Button>
-        <Button mode="contained" onPress={() => this.stop()}>
-          Stop
         </Button>
       </View>
     );
