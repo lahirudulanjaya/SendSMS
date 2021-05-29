@@ -1,14 +1,12 @@
 import {PermissionsAndroid} from 'react-native';
 
-export async function requestSendSMSPermission() {
+export async function requestGetAllContatcsPermission() {
   try {
     const granted = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.SEND_SMS,
+      PermissionsAndroid.PERMISSIONS.READ_CONTACTS,
       {
-        title: 'Send SMS Permission',
-        message:
-          'SMS server need permission of sending sms ' +
-          'so you can automate the sms sending',
+        title: 'Read Contacts Permission',
+        message: 'App requires permission to dislay all contacts',
         buttonNeutral: 'Ask Me Later',
         buttonNegative: 'Cancel',
         buttonPositive: 'OK',
