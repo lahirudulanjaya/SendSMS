@@ -16,6 +16,9 @@ import {
   Searchbar,
   TextInput,
   Title,
+  ActivityIndicator,
+  Provider as PaperProvider,
+  DefaultTheme,
 } from 'react-native-paper';
 import SmsAndroid from 'react-native-get-sms-android';
 import {requestSendSMSPermission} from './permissionHandling/SendSms';
@@ -26,6 +29,16 @@ import {requestGetAllContatcsPermission} from './permissionHandling/getAllContac
 const UNIQUE_KEY = '7098d2b2be5711eb85290242ac130003';
 const APP_LINK = 'smsserver://';
 
+const theme = {
+  ...DefaultTheme,
+  roundness: 2,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: '#171717',
+    accent: '#171717',
+  },
+};
+
 class App extends Component {
   constructor(props) {
     super(props);
@@ -35,14 +48,16 @@ class App extends Component {
       contacts: [],
       searchQuery: '',
       sendersArr: [],
+      sendersArrNames: [],
+      loading: true,
     };
   }
 
   getContactsByString = stringQuery => {
     Contacts.getContactsMatchingString(stringQuery).then(contacts => {
-      console.log(contacts[30]);
       this.setState({
         contacts: contacts,
+        loading: false,
       });
     });
   };
@@ -73,6 +88,7 @@ class App extends Component {
       });
     Linking.addEventListener('url', e => this.sendMessage(e.url));
   }
+
   onChangeSenders = senders => {
     this.setState({senders: senders});
   };
@@ -89,7 +105,7 @@ class App extends Component {
     if (senders.length < 1 || message === '') {
       return;
     }
-    this.state.sendersArray.forEach(sender => {
+    senders.forEach(sender => {
       SmsAndroid.autoSend(
         sender,
         message,
@@ -103,42 +119,66 @@ class App extends Component {
     });
   };
 
-  filterMessage(url) {
+  filterMessage = url => {
     const filterWord = 'message' + UNIQUE_KEY;
-    return url.match(filterWord + '(.*)' + filterWord)[1];
-  }
+    const extractedMessage = url.match(filterWord + '(.*)' + filterWord)[1];
+    this.setState({
+      message: extractedMessage,
+    });
+    return extractedMessage;
+  };
 
   filterSenders(url) {
     const filterWord = 'senders' + UNIQUE_KEY;
-    return url.match(filterWord + '(.*)' + filterWord)[1];
+    const extractedSenders = url.match(filterWord + '(.*)' + filterWord)[1];
+    const extractedSendersSplitted = extractedSenders.split(',');
+    let arr = this.state.sendersArr;
+    arr.concat(extractedSenders);
+    arr = [...new Set(arr)];
+    this.setState({
+      sendersArr: arr,
+    });
+    return arr;
   }
 
-  handleOnPressContact = newContact => {
+  handleOnPressContact = (newContact, newContactName) => {
     if (newContact === '') {
       return;
     }
     let arr = this.state.sendersArr;
+    let arrNames = this.state.sendersArrNames;
     arr.push(newContact);
+    newContactName !== ''
+      ? arrNames.push(newContactName)
+      : newContact.toString();
     arr = [...new Set(arr)];
+    arrNames = [...new Set(arrNames)];
     this.setState({
       sendersArray: arr,
+      sendersArrNames: arrNames,
     });
   };
 
-  handleRemoveContact = removeContact => {
+  handleRemoveContact = (removeContact, removeContactName) => {
     let arr = this.state.sendersArr;
+    let arrNames = this.state.sendersArrNames;
     const indexOfRemovingItem = arr.indexOf(removeContact);
+    const indexOfRemovingItemName = arrNames.indexOf(removeContactName);
     if (indexOfRemovingItem !== -1) {
       arr.splice(indexOfRemovingItem, 1);
     }
+    if (indexOfRemovingItemName !== -1) {
+      arrNames.splice(indexOfRemovingItemName, 1);
+    }
     this.setState({
       sendersArr: arr,
+      sendersArrNames: arrNames,
     });
   };
 
   render() {
     return (
-      <>
+      <PaperProvider theme={theme}>
         <Appbar.Header>
           <Appbar.Content title="To" />
           <Searchbar
@@ -153,7 +193,12 @@ class App extends Component {
 
           <Appbar.Action
             icon="plus"
-            onPress={() => this.handleOnPressContact(this.state.searchQuery)}
+            onPress={() =>
+              this.handleOnPressContact(
+                this.state.searchQuery,
+                this.state.searchQuery,
+              )
+            }
           />
         </Appbar.Header>
         <View
@@ -162,10 +207,16 @@ class App extends Component {
           }}>
           <View style={{alignItems: 'center', padding: 2}}>
             <ScrollView horizontal={true}>
-              {this.state.sendersArr.map((senderInArr, key) => (
+              {this.state.sendersArrNames.map((senderInArr, key) => (
                 <Chip
+                  key={key}
                   style={{margin: 2}}
-                  onClose={() => this.handleRemoveContact(senderInArr)}
+                  onClose={() =>
+                    this.handleRemoveContact(
+                      this.state.sendersArr[key],
+                      this.state.sendersArrNames[key],
+                    )
+                  }
                   onPress={() => console.log('Pressed')}>
                   {senderInArr}
                 </Chip>
@@ -180,7 +231,12 @@ class App extends Component {
           <ScrollView style={{height: '100%'}}>
             {this.state.contacts.map((contact, key) => (
               <List.Item
-                onPress={() => this.handleOnPressContact(contact.displayName)}
+                onPress={() =>
+                  this.handleOnPressContact(
+                    contact.phoneNumbers[0].number,
+                    contact.displayName,
+                  )
+                }
                 key={key}
                 title={contact.displayName}
                 description={contact.phoneNumbers[0].number}
@@ -190,6 +246,7 @@ class App extends Component {
               />
             ))}
           </ScrollView>
+
           <View style={{flexGrow: 1}}></View>
 
           <View style={{flexDirection: 'row'}}>
@@ -197,6 +254,7 @@ class App extends Component {
               style={{
                 width: (5 * Dimensions.get('window').width) / 6,
                 borderTopLeftRadius: 0,
+                borderColor: '#171717',
               }}
               multiline
               label="Type your message"
@@ -216,7 +274,7 @@ class App extends Component {
             </TouchableOpacity>
           </View>
         </View>
-      </>
+      </PaperProvider>
     );
   }
 }
