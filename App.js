@@ -2,32 +2,27 @@ import React, {Component} from 'react';
 import {
   Dimensions,
   Linking,
-  Platform,
   ScrollView,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import {
+  Appbar,
   Avatar,
-  Button,
   Chip,
+  DefaultTheme,
   List,
+  Provider as PaperProvider,
   Searchbar,
   TextInput,
-  Title,
-  ActivityIndicator,
-  Provider as PaperProvider,
-  DefaultTheme,
 } from 'react-native-paper';
 import SmsAndroid from 'react-native-get-sms-android';
 import {requestSendSMSPermission} from './permissionHandling/SendSms';
-import {Appbar} from 'react-native-paper';
 import Contacts from 'react-native-contacts';
-import {requestGetAllContatcsPermission} from './permissionHandling/getAllContacts';
+import {requestGetAllContactsPermission} from './permissionHandling/getAllContacts';
 
 const UNIQUE_KEY = '7098d2b2be5711eb85290242ac130003';
-const APP_LINK = 'smsserver://';
+const APP_LINK = 'meghaduta://';
 
 const theme = {
   ...DefaultTheme,
@@ -78,14 +73,7 @@ class App extends Component {
     });
   };
 
-  async componentDidMount() {
-    const canSendSMS = await requestSendSMSPermission();
-    const canGetAllContacts = await requestGetAllContatcsPermission();
-
-    if (canGetAllContacts) {
-      this.getContactsByString(this.state.searchQuery);
-    }
-
+  linkApp() {
     Linking.getInitialURL()
       .then(url => {
         if (url) {
@@ -96,6 +84,13 @@ class App extends Component {
         console.error('An error occurred', err);
       });
     Linking.addEventListener('url', e => this.sendMessage(e.url));
+  }
+
+  async componentDidMount() {
+    await requestSendSMSPermission();
+    await requestGetAllContactsPermission();
+    this.getContactsByString(this.state.searchQuery);
+    this.linkApp();
   }
 
   onChangeSenders = senders => {
@@ -111,6 +106,7 @@ class App extends Component {
   };
 
   sendSMS = async (message, senders) => {
+    alert(senders);
     if (senders.length < 1 || message === '') {
       return;
     }
@@ -140,14 +136,7 @@ class App extends Component {
   filterSenders(url) {
     const filterWord = 'senders' + UNIQUE_KEY;
     const extractedSenders = url.match(filterWord + '(.*)' + filterWord)[1];
-    const extractedSendersSplitted = extractedSenders.split(',');
-    let arr = this.state.sendersArr;
-    arr.concat(extractedSenders);
-    arr = [...new Set(arr)];
-    this.setState({
-      sendersArr: arr,
-    });
-    return arr;
+    return extractedSenders.split(',');
   }
 
   handleOnPressContact = (newContact, newContactName) => {
@@ -232,11 +221,6 @@ class App extends Component {
               ))}
             </ScrollView>
           </View>
-          {/* <TextInput
-            label="Senders"
-            value={this.state.senders}
-            onChangeText={this.onChangeSenders}
-          /> */}
           <ScrollView style={{height: '100%'}}>
             {this.state.contacts.map((contact, key) => (
               <List.Item
@@ -256,7 +240,7 @@ class App extends Component {
             ))}
           </ScrollView>
 
-          <View style={{flexGrow: 1}}></View>
+          <View style={{flexGrow: 1}} />
 
           <View style={{flexDirection: 'row'}}>
             <TextInput

@@ -1,4 +1,4 @@
-import {PermissionsAndroid} from 'react-native';
+import {PermissionsAndroid, Alert, BackHandler} from 'react-native';
 
 export async function requestSendSMSPermission() {
   try {
@@ -6,10 +6,7 @@ export async function requestSendSMSPermission() {
       PermissionsAndroid.PERMISSIONS.SEND_SMS,
       {
         title: 'Send SMS Permission',
-        message:
-          'SMS server need permission of sending sms ' +
-          'so you can automate the sms sending',
-        buttonNeutral: 'Ask Me Later',
+        message: 'SMS server need sms permission to send sms',
         buttonNegative: 'Cancel',
         buttonPositive: 'OK',
       },
@@ -19,10 +16,22 @@ export async function requestSendSMSPermission() {
       return true;
     } else {
       console.log('Send SMS denied');
-      return false;
+      Alert.alert(
+        'Required SMS permission',
+        'APP need SMS permission to send sms',
+        [
+          {
+            text: 'Exit app',
+            onPress: () => BackHandler.exitApp(),
+          },
+          {
+            text: 'Request again',
+            onPress: () => requestSendSMSPermission(),
+          },
+        ],
+      );
     }
   } catch (err) {
     console.warn(err);
-    return false;
   }
 }
