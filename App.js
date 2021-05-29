@@ -54,12 +54,21 @@ class App extends Component {
   }
 
   getContactsByString = stringQuery => {
-    Contacts.getContactsMatchingString(stringQuery).then(contacts => {
-      this.setState({
-        contacts: contacts,
-        loading: false,
+    Contacts.getContactsMatchingString(stringQuery)
+      .then(contacts => {
+        let tempContacts = contacts.filter(value => {
+          if (value.phoneNumbers[0]) {
+            return value;
+          }
+        });
+        this.setState({
+          contacts: tempContacts,
+          loading: false,
+        });
+      })
+      .catch(err => {
+        console.log(err);
       });
-    });
   };
 
   handleOnChangeSearchQuery = query => {
