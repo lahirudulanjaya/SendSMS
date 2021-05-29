@@ -17,9 +17,9 @@ import {
   TextInput,
 } from 'react-native-paper';
 import SmsAndroid from 'react-native-get-sms-android';
-import {requestSendSMSPermission} from './permissionHandling/SendSms';
+import {requestSendSMSPermission} from './permissionHandling/sendSms';
 import Contacts from 'react-native-contacts';
-import {requestGetAllContactsPermission} from './permissionHandling/getAllContacts';
+import {requestGetAllContactsPermission} from './permissionHandling/readContact';
 
 const UNIQUE_KEY = '7098d2b2be5711eb85290242ac130003';
 const APP_LINK = 'meghaduta://';
@@ -106,7 +106,6 @@ class App extends Component {
   };
 
   sendSMS = async (message, senders) => {
-    alert(senders);
     if (senders.length < 1 || message === '') {
       return;
     }
