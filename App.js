@@ -125,7 +125,9 @@ class App extends Component {
 
   filterMessage = url => {
     const filterWord = 'message' + UNIQUE_KEY;
-    const extractedMessage = url.match(filterWord + '(.*)' + filterWord)[1];
+    const extractedMessage = url.match(
+      filterWord + '((.|\n)*)' + filterWord,
+    )[1];
     this.setState({
       message: extractedMessage,
     });
@@ -134,7 +136,9 @@ class App extends Component {
 
   filterSenders(url) {
     const filterWord = 'senders' + UNIQUE_KEY;
-    const extractedSenders = url.match(filterWord + '(.*)' + filterWord)[1];
+    const extractedSenders = url.match(
+      filterWord + '((.|\n)*)' + filterWord,
+    )[1];
     return extractedSenders.split(',');
   }
 
