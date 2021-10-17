@@ -102,6 +102,7 @@ class App extends Component {
 
   sendMessage = async uri => {
     await this.sendSMS(this.filterMessage(uri), this.filterSenders(uri));
+    this.resetState();
     await Linking.openURL(APP_LINK);
   };
 
@@ -176,6 +177,10 @@ class App extends Component {
       sendersArrNames: arrNames,
     });
   };
+
+  resetState() {
+    this.setState({message: '', senders: '', sendersArr: []});
+  }
 
   render() {
     return (
